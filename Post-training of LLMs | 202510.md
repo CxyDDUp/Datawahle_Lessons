@@ -773,7 +773,11 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 + DPO损失函数：
 
 
-  + > $$ \mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma\left( \beta \left( \log \frac{\pi_\theta(y_w|x)}{\pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{\pi_{\text{ref}}(y_l|x)} \right) \right) \right] $$
+  + > $$
+\mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ 
+\log \sigma\left( \beta \left( \log \frac{\pi_\theta(y_w|x)}{\pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{\pi_{\text{ref}}(y_l|x)} \right) \right) 
+\right]
+$$
 
   + ✅含义：
 
