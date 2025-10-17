@@ -693,7 +693,7 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
 + 传统方法：RLHF 中的 PPO 目标
 
-  + 目标函数：$\mathcal{L}_{\text{PPO}}(\theta) = \mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}} \left[  \log \sigma \left( \beta \left( r_\theta(x, y_w) - r_\theta(x, y_l) \right) \right) - \lambda D_{\text{KL}}\left( \pi_\theta(\cdot|x) \parallel \pi_{\text{ref}}(\cdot|x) \right) \right]$
+  + 目标函数: $\mathcal{L}_{\text{PPO}}(\theta) = \mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}} \left[  \log \sigma \left( \beta \left( r_\theta(x, y_w) - r_\theta(x, y_l) \right) \right) - \lambda D_{\text{KL}}\left( \pi_\theta(\cdot|x) \parallel \pi_{\text{ref}}(\cdot|x) \right) \right]$
   + 需要：
     + 显式训练一个奖励模型 $r_\theta$
     + 维护一个参考策略 $\pi_{ref}$
@@ -751,20 +751,20 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
   + 代入**Bradley-Terry 模型**：
 
 
-    + > 1. 已知模型公式为：$P(y_w \succ y_l \mid x) = \frac{e^{r(x, y_w)}}{e^{r(x, y_w)} + e^{r(x, y_l)}}$
+    + > 1. 已知模型公式为 $P(y_w \succ y_l \mid x) = \frac{e^{r(x, y_w)}}{e^{r(x, y_w)} + e^{r(x, y_l)}}$
       > 2. $P(y_w \succ y_l \mid x) = \frac{1}{1 + e^{r(x,y_l)-r(x,y_w)}}=\frac{1}{1+e^{\beta(\log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)} - \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)})}} = \frac{1}{1+(\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})^\beta}$
 
   + 使用`sigmoid`恒等式：
 
 
-    + > 1. ‼️恒等式：$\frac{1}{1+e^{-z}} = \sigma(z)$，即$\frac{1}{1+a} = \sigma(-\log a)$
-      > 2. 令：$a = (\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})^\beta$
-      > 3. 🍇：$P(y_w \succ y_l \mid x) = \frac{1}{1+a} = \sigma(-\log a) = \sigma(-\beta \log(\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})) = \sigma(\beta \log(\frac{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)}{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)})) $
-      > 4. ☀️：$P(y_w \succ y_l \mid x) = \sigma(\beta \log(\frac{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)}{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)})) = \sigma(\beta(\log \frac{\pi_\theta(y_w|x)}{ \pi_{\text{ref}}(y_w|x)} - \log \frac{\pi_\theta(y_l|x)}{ \pi_{\text{ref}}(y_l|x)}))\\= \sigma(\beta(\log \frac{\pi_\theta(y_w|x)}{ \pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{ \pi_{\text{ref}}(y_l|x)}))$
+    + > 1. ‼️恒等式: $\frac{1}{1+e^{-z}} = \sigma(z)$，即 $\frac{1}{1+a} = \sigma(-\log a)$
+      > 2. 令: $a = (\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})^\beta$
+      > 3. 🍇: $P(y_w \succ y_l \mid x) = \frac{1}{1+a} = \sigma(-\log a) = \sigma(-\beta \log(\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})) = \sigma(\beta \log(\frac{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)}{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)})) $
+      > 4. ☀️: $P(y_w \succ y_l \mid x) = \sigma(\beta \log(\frac{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)}{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)})) = \sigma(\beta(\log \frac{\pi_\theta(y_w|x)}{ \pi_{\text{ref}}(y_w|x)} - \log \frac{\pi_\theta(y_l|x)}{ \pi_{\text{ref}}(y_l|x)}))= \sigma(\beta(\log \frac{\pi_\theta(y_w|x)}{ \pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{ \pi_{\text{ref}}(y_l|x)}))$
       >
-      > > $\log \frac{\pi_\theta(y_w|x)}{ \pi_\theta(y_l|x)}$：表示**当前模型**认为$y_w$相对于$y_l$的“偏好强度”;
+      > > $\log \frac{\pi_\theta(y_w|x)}{ \pi_\theta(y_l|x)}$ ：表示**当前模型**认为$y_w$相对于$y_l$的“偏好强度”;
       > >
-      > > $\log \frac{\pi_{ref}(y_w|x)}{ \pi_{ref}(y_l|x)}$：表示**参考模型**认为$y_w$相对于$y_l$的“偏好强度”;
+      > > $\log \frac{\pi_{ref}(y_w|x)}{ \pi_{ref}(y_l|x)}$ ：表示**参考模型**认为$y_w$相对于$y_l$的“偏好强度”;
       > >
       > > - **两者之差：当前模型比参考模型多“强化”了多少偏好**
 
@@ -773,7 +773,8 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 + DPO损失函数：
 
 
-  + > $$
+  + >
+$$
 \mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ 
 \log \sigma\left( \beta \left( \log \frac{\pi_\theta(y_w|x)}{\pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{\pi_{\text{ref}}(y_l|x)} \right) \right) 
 \right]
