@@ -168,7 +168,7 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
       + $y = (y_1, y_2, \dots, y_T), \quad y_t \in \text{Vocabulary}$
 
-    + 模型在生成第 `t` 个 token 时，会基于前面的上下文（包括输入$ x $和已生成的 $y_1$ 到 $y_{t-1}$）来预测下一个 token 的概率分布：
+    + 模型在生成第 `t` 个 token 时，会基于前面的上下文（包括输入$x$和已生成的 $y_1$ 到 $y_{t-1}$）来预测下一个 token 的概率分布：
 
       + $P(y_t \mid x, y_1,y_2...y_{t-1}; \theta)$
 
@@ -554,8 +554,240 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
                             title="Base Model (After SFT) Output")
   ```
 
-
 # 第三章 直接偏好优化理论及实践
+
+## 3.1 直接偏好优化基础理论（Basics of DPO）
+
+> 背景：
+>
+> ​	在DPO出现之前，对齐语言模型与人类偏好主要依赖**强化学习从人类反馈**（Reinforcement Learning from Human Feedback, RLHF）
+>
+> + **RLHF的问题**：
+>   + 强化学习过程复杂、不稳定，超参数敏感。
+>   + 需要额外的奖励模型和参考模型，增加了训练和部署的复杂性。
+>   + PPO等算法在语言模型上容易出现训练崩溃或模式重复。
+
+### 3.1.1 概述
+
++ **直接偏好优化（Direct Preference Optimization, DPO）**
+
+  + 从正面和负面响应中进行对比学习的方法
+
+  + > DPO 将“人类偏好”直接转化为损失函数，无需训练奖励模型和强化学习。==即==**在一定条件下，强化学习中的策略优化目标可以转化为一个简单的分类损失函数**
+
++ 针对用户可能会问的问题，至少需要准备两个回复，以便使得直接偏好优化(DPO)起作用
+
+  + 希望其去模仿偏好的样本
+
++ Target：
+
+  + 最小化对比损失
+  + 对负面回复进行惩罚，并且鼓励正面回复
+
+### 3.1.2 DPO损失
+
++ <font color=red>DPO损失实际上是对**重新参数化奖励模型的奖励差异**的交叉熵损失</font>
+
+​									$\mathcal{L}\_{\text{DPO}} = -\log \sigma \left( \beta \left( \log \frac{\pi_\theta(y_{\text{pos}} \mid x)}{\pi_{\text{ref}}(y_{\text{pos}} \mid x)} - \log \frac{\pi_\theta(y_{\text{neg}} \mid x)}{\pi_{\text{ref}}(y_{\text{neg}} \mid x)} \right) \right)$
+
++ 整体：对数差值---的---sigmoid函数---的---负对数【两个前后的对数差值，分别关注正样本和负样本】
+
+  +  $$\sigma$$ 实际上就是sigmoid函数
+
+  +  $$\beta$$ 是一个非常重要的超参数
+
+     +  $$\beta$$ 值越高，这个对数差值就越重要。
+
+  +  有两个概率比值的对数。
+     + 前一块为正样本相关的分数，后一块为负样本相关的分数
+     + 分子即 $$\pi_\theta$$ ，是微调后的模型
+       + 含义：对于微调后的模型，在给定提示的情况下，产生正面回复的概率是多少。
+     + 分母即$\pi_{ref}$是一个参考模型，**它是原始模型的副本，权重固定，不可调整**。
+       + 含义：对于原始模型，在给定提示的情况下，产生那些正面回复的概率。同样，对于负样本，我们也有对数比值，其中 $$\pi_\theta$$ 是你微调后的模型， $$ \theta$$ 是你在这里想要调整的参数。而 $$\pi$$ 是一个固定的参考模型，可以是原始模型的副本。    
+
++ 本质上，这个对数比值项可以被看作是奖励模型的重新参数化。
+  + 如果你将其<font color=red>视为</font>奖励模型，那么这个DPO损失实际上就是正样本和负样本之间奖励差异的sigmoid函数
++ 本质上，DPO试图最大化正样本的奖励，并最小化负样本的奖励。
+
+### 3.1.3 DPO的最佳使用场景
+
++ **改变模型行为**:
+  + 小的修改：
+    + 改变模型特性
+    + 使模型在多语言响应、指令遵循能力方面表现更好
+    + 改变模型一些与安全相关的响应
++ **提升模型能力**
++ ==解析==
+  + 模型行为？？工程化？？
+    + **行为**是指在实际交互中具体表现出来的**动作或输出**，这<font color=red>取决于</font>模型的能力
+    + 例如：
+      + **遵循指令**：按照用户的明确要求进行回答或操作。
+      + **拒绝回答**：对不安全、违法或超出范围的请求说“不”。
+      + **创造内容**：写故事、诗歌、邮件等。
+      + **表现出偏见或错误**：由于训练数据的偏差，可能生成带有偏见或不准确的信息。
+      + **“幻觉”(Hallucination)**：生成看似合理但事实上错误或编造的内容。
+  + 模型能力？？
+    + **能力**指的是模型**理论上能够做什么**，也就是它的**潜在技能或功能范围**。
+    + 通常由模型的**架构**、**训练数据**、**参数规模**和**训练方**法决定
+    + 例如：
+      + **语言理解**：理解文本的含义、情感、意图等。
+      + **语言生成**：根据提示生成连贯、符合语法的文本。
+      + **知识记忆**：在训练过程中学习到的大量事实性知识（截至其训练数据的时间点）。
+      + **推理能力**：进行逻辑推理、数学计算、因果推断等。
+      + **多语言能力**：理解和生成多种语言。
+      + **代码生成**：编写和理解编程代码。
+      + **上下文学习 (In-context Learning)**：通过少量示例或指令快速适应新任务。
+  + ==我认为==
+    + 能力是指“能做什么”，行为是指“实际做了什么”
+    + 模型的能力是模型的行为的基石，模型的行为是模型的能力的延申
+
+### 3.1.4 DPO的数据策划原则
+
++ **一种校正方法**：
+
+  + **过程**：
+    + 由原始模型生成回复
+    + 将该回复作为一个主动样本
+    + 对其改进之后，将改进之后的回复，作为一个**正向回复**
+    + 这种基于纠正的方法，==自动==创建大规模、高质量的对比数据
+  + <font color=red>疑惑？？？</font>：为啥是自动？？明明前文和例子中都是人为去进行改进的欸~！
+    + 可以理解为，人为修改是一个`template`，人工只是参与**设计纠正策略或规则**，此后可以用“自动化”或者“半自动化”进行替代，而不是逐条人工修改
+    + “**从人工示范到自动构造**”的范式升级
+    + 高级的“自动化”方式：
+      + 使用另一个强模型（如 GPT-4）作为“标注器”
+      + 基于模板或规则生成正向回复
+      + 使用强化学习或打分模型筛选与修正
+
++ **在线或策略内DPO的一种特殊情况**
+
+  + **方案**：从模型自身的分布中生成**许多**正向和负向示例
+
+  + 过程：
+
+    + 针对同一个提示，让当前模型生成多个回复
+    + 从众多回复中收集最佳回复作为正样本，最差回复作为负样本【⚠️要注意甄别！！！】
+    + ==之后==你再判断哪个回复更好，哪个回复更差
+
+  + <font color=red>疑惑？？？</font>：为什么还需要再去判断哪个回复好，哪个回复坏呢，不是已经收集最佳回复作为正样本了吗？
+
+    + 不是“已经收集了最佳”，而是“收集了一堆回复，其中有一个是最佳”。
+    + “最佳”和“最差”是**通过后续的判断过程从这批回复中筛选出来的**。
+
+  + ⚠️⚠️：
+
+    + > 避免过拟合
+      >
+      > 因为：1. 直接偏好优化本质上是在进行某种奖励学习，它很容易过度拟合到一些捷径上。
+
+### 3.1.5 DPO数学原理详解
+
++ 问题设定
+
+  + > 我们希望训练一个语言模型 $\pi_{\theta}(y|x)$，使其输出更符合人类偏好。我们拥有一个数据集$D=\{(x,y_w,y_l)\}$ 其中：
+    >
+    > + $x$：提示(prompt)
+    > + $y_w$：正面响应(winning)
+    > + $y_l$：负面响应(losing)
+
+  + 目标🎯：**最大化模型生成$y_w$而非$y_l$的概率**，同时保持与原始模型不偏离（防止过拟合）
+
++ 传统方法：RLHF 中的 PPO 目标
+
+  + 目标函数：$\mathcal{L}_{\text{PPO}}(\theta) = \mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}} \left[  \log \sigma \left( \beta \left( r_\theta(x, y_w) - r_\theta(x, y_l) \right) \right) - \lambda D_{\text{KL}}\left( \pi_\theta(\cdot|x) \parallel \pi_{\text{ref}}(\cdot|x) \right) \right]$
+  + 需要：
+    + 显式训练一个奖励模型 $r_\theta$
+    + 维护一个参考策略 $\pi_{ref}$
+    + 使用强化学习更新策略
+  + ==引入DPO核心思想==：**绕过奖励模型和强化学习，直接在偏好数据上优化策略**。
+
++ Bradley-Terry 模型：建模人类偏好
+
+  + DPO 假设人类偏好服从 **Bradley-Terry 模型**：
+
+    + > $P(y_w \succ y_l \mid x) = \frac{e^{r(x, y_w)}}{e^{r(x, y_w)} + e^{r(x, y_l)}}$
+
+    + 它假设每个响应 $y$对应一个“隐含奖励” $r(x,y)$，奖励越高，越可能被选择。
+
+    + ‼️**给定提示 $x$，人类更喜欢 $y_w$ 而不是$y_l$ 的概率**。
+
+    + 为啥要取e的指数？？？
+
+      + 将奖励映射到正实数空间，用于归一化比较💡
+
+  + 奖励越大，被选中的概率越大！
+
+
++ 奖励函数与策略的关系（DPO 的🧠核心洞察）
+
+  + > $r(x, y) = \beta \log \frac{\pi_\theta(y|x)}{\pi_{\text{ref}}(y|x)} + r_{\text{ref}}(x)$
+    >
+    > + $\beta$：温度参数（scalar），控制 KL 正则的强度，通常$\beta$>0
+    > + $r_{ref}(x)$：仅依赖于输$x$的偏置项，不影响 $y_w$和 $y_l$ 的相对比较
+
+  + 🌹核心突破🐮🍺：
+
+    + **不需要显式训练一个奖励模型**，而是通过当前策略 $\pi_\theta$与参考策略$\pi_{ref}$ 的对数比值来**隐式定义奖励**。
+
+  + 解析：
+
+    + $\pi_\theta(y|x)>\pi_{ref}(y|x)$，说明当前模型比参考模型更愿意生成$y$，因此$r(x,y)$更高。
+    + $\pi_\theta(y|x)<\pi_{ref}(y|x)$，说明当前模更不愿意生成$y$，因此$r(x,y)$更低。
+    + $\beta$控制这个“偏离奖励”的放大程度：$\beta$越大，模型越激进；反之，越保守
+
++ 结合上面俩式子
+
+
+  + 分别计算$r(x,y_w)$和$r(x,w_l)$
+
+
+    + > 1. $r(x,y_w)=\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} + r_{\text{ref}}(x)$
+      > 2. $r(x,y_l)=\beta \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)} + r_{\text{ref}}(x)$
+
+  + 分别计算$e^{r(x,y_w)}$和$e^{r(x,w_l)}$
+
+    + > 1. $e^{r(x,y_w)}=e^{\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} + r_{\text{ref}}(x)}=e^{{\text{ref}}(x)} \cdot (\frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)})^\beta$
+      > 2. $e^{r(x,y_l)}=e^{\beta \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)} + r_{\text{ref}}(x)}=e^{{\text{ref}}(x)} \cdot (\frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)})^\beta$
+
+  + 代入**Bradley-Terry 模型**：
+
+
+    + > 1. 已知模型公式为：$P(y_w \succ y_l \mid x) = \frac{e^{r(x, y_w)}}{e^{r(x, y_w)} + e^{r(x, y_l)}}$
+      > 2. $P(y_w \succ y_l \mid x) = \frac{1}{1 + e^{r(x,y_l)-r(x,y_w)}}=\frac{1}{1+e^{\beta(\log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)} - \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)})}} = \frac{1}{1+(\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})^\beta}$
+
+  + 使用`sigmoid`恒等式：
+
+
+    + > 1. ‼️恒等式：$\frac{1}{1+e^{-z}} = \sigma(z)$，即$\frac{1}{1+a} = \sigma(-\log a)$
+      > 2. 令：$a = (\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})^\beta$
+      > 3. 🍇：$P(y_w \succ y_l \mid x) = \frac{1}{1+a} = \sigma(-\log a) = \sigma(-\beta \log(\frac{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)}{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)})) = \sigma(\beta \log(\frac{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)}{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)})) $
+      > 4. ☀️：$P(y_w \succ y_l \mid x) = \sigma(\beta \log(\frac{\pi_\theta(y_w|x) \div \pi_{\text{ref}}(y_w|x)}{\pi_\theta(y_l|x) \div \pi_{\text{ref}}(y_l|x)})) = \sigma(\beta(\log \frac{\pi_\theta(y_w|x)}{ \pi_{\text{ref}}(y_w|x)} - \log \frac{\pi_\theta(y_l|x)}{ \pi_{\text{ref}}(y_l|x)}))\\= \sigma(\beta(\log \frac{\pi_\theta(y_w|x)}{ \pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{ \pi_{\text{ref}}(y_l|x)}))$
+      >
+      > > $\log \frac{\pi_\theta(y_w|x)}{ \pi_\theta(y_l|x)}$：表示**当前模型**认为$y_w$相对于$y_l$的“偏好强度”;
+      > >
+      > > $\log \frac{\pi_{ref}(y_w|x)}{ \pi_{ref}(y_l|x)}$：表示**参考模型**认为$y_w$相对于$y_l$的“偏好强度”;
+      > >
+      > > - **两者之差：当前模型比参考模型多“强化”了多少偏好**
+
+  + $\sigma(z)$将实数映射到(0, 1)
+
++ DPO损失函数：
+
+
+  + > $\mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}} \left[ \log \sigma\left(  \beta \left( \log \frac{\pi_\theta(y_w|x)}{\pi_\theta(y_l|x)} - \log \frac{\pi_{\text{ref}}(y_w|x)}{\pi_{\text{ref}}(y_l|x)} \right) \right) \right]$
+
+  + ✅含义：
+
+
+    + **最终训练目标**。我们希望最大化人类偏好发生的概率，等价于最小化其**负对数似然**。
+    + $\mathbb{E}_{(x, y_w, y_l) \sim \mathcal{D}}$：表示对整个偏好数据集 DD 取期望（即平均损失）
+
+  + 
+
+### 3.1.6 ==思考==
+
++ DPO到底有没有奖励模型，要是没有的话，那“DPO损失实际上是对重新参数化奖励模型的奖励差异的交叉熵损失”这句话是什么意思呢？
+  + **DPO 不显式地训练或使用一个独立的“奖励模型”（Reward Model），但它隐式地依赖于一个从参考模型和KL散度中推导出来的“隐式奖励模型”。**
+  + 隐式奖励模型，由上述公式推导可知，是根据当前策略 $\pi_\theta$与参考策略$\pi_{ref}$ 的对数比值来**隐式定义奖励**⚠️
 
 # 第四章 在线强化学习理论及实践
 
