@@ -862,7 +862,7 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
   + 奖励模型通过优化如下损失函数进行学习：
 
-    + > $L=\log (\sigma(r_j - r_k))$
+    + >  $L=\log (\sigma(r_j - r_k))$
       >
       > 其中，若人类认为响应 $j$ 优于 $k$，则鼓励模型提升 $r_j$ ，降低 $r_k$
 
@@ -907,11 +907,11 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
   + PPO 的目标函数：
 
-    $$\mathcal{J}_{PPO}(\theta) = \mathbb{E}_{q \sim P(Q), o \sim \pi_{\theta_{\text{old}}}(O|q)} \left[ \frac{1}{|o|} \sum_{t=1}^{|o|} \min \left[ \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})} A_t, \text{clip} \left( \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})}, 1 - \varepsilon, 1 + \varepsilon \right) A_t \right] \right]$$
+     $$\mathcal{J}_{PPO}(\theta) = \mathbb{E}_{q \sim P(Q), o \sim \pi_{\theta_{\text{old}}}(O|q)} \left[ \frac{1}{|o|} \sum_{t=1}^{|o|} \min \left[ \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})} A_t, \text{clip} \left( \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})}, 1 - \varepsilon, 1 + \varepsilon \right) A_t \right] \right]$$
 
     + 函数解析：
 
-    + $\mathcal{J}_{PPO}(\theta)$ 
+    +  $\mathcal{J}_{PPO}(\theta)$ 
 
       + 含义：这是我们要优化的目标函数，也叫“代理目标函数”（Surrogate Objective Function）
 
@@ -919,60 +919,60 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
       + 注意：这不是真正的期望回报 $J(\pi)$ ，而是用来近似它的“代理目标”，便于优化且稳定
 
-    + $\mathbb{E}_{q \sim P(Q), o \sim \pi_{\theta_{\text{old}}}(O|q)}$
+    +  $\mathbb{E}_{q \sim P(Q), o \sim \pi_{\theta_{\text{old}}}(O|q)}$
 
       + 含义：对所有可能的查询 $q$ 和对应的输出序列 $ o$ 求期望
       + 分解：
-        + $q \sim P(Q)$：从任务分布中采样一个查询
-        + $o \sim \pi_{{\theta}_{old}}(o|q)$：在旧策略下，根据当前输入 $q$ 生成一个完整的输出序列 $q$
+        +  $q \sim P(Q)$：从任务分布中采样一个查询
+        +  $o \sim \pi_{{\theta}_{old}}(o|q)$：在旧策略下，根据当前输入 $q$ 生成一个完整的输出序列 $q$
       + <font color=red>为什么用旧策略？？？</font>
         + 因为我们在训练时使用的是**重要性采样**（Importance Sampling），即用旧策略收集数据，然后用新策略评估。
         + 这样可以保证训练过程的稳定性，避免因策略变化太快而导致样本失效。
 
-    + $\frac{1}{|o|} \sum_{t=1}^{|o|}min[...]$
+    +  $\frac{1}{|o|} \sum_{t=1}^{|o|}min[...]$
 
       + 对整个输出序列 $ o$ 中的每一个时间步 $t$ ，计算一个“局部代理目标”，然后取平均。
 
-      + $\frac{1}{|o|}$：归一化因子，表示对每个 token 的贡献进行平均。
+      +  $\frac{1}{|o|}$：归一化因子，表示对每个 token 的贡献进行平均。
 
-      + $\sum_{t=1}^{|o|}$：遍历序列中所有的token
+      +  $\sum_{t=1}^{|o|}$：遍历序列中所有的token
 
       + min[.]：这是PPO的核心–裁剪机制
 
       + > ⚠️ 注意：这里不是直接求和，而是先对每个时间步计算一个值，再求平均。这相当于在**每个 token 上独立优化**，最后汇总成一个总目标。
 
-    + 🧠 💡$$  \min \left[ \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})} A_t, \text{clip} \left( \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})}, 1 - \varepsilon, 1 + \varepsilon \right) A_t \right]$$
+    + 🧠 💡 $$  \min \left[ \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})} A_t, \text{clip} \left( \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})}, 1 - \varepsilon, 1 + \varepsilon \right) A_t \right]$$
 
       + 重要性比率
 
-        + > $r_t = \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{old}(o_t|q, o_{<t})}$
+        + >  $r_t = \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{old}(o_t|q, o_{<t})}$
           >
           > + 含义：新策略与旧策略在第 $t$ 步选择 token $o_t$ 的概率之比。
           > + ‼️为什么重要？？
-          >   + 如果 $r_t > 1$：说明新策略更倾向于生成这个 token → 我们希望它被奖励。
-          >   + 如果 $r_t < 1$：说明新策略更少生成这个 token → 我们希望它被惩罚。
+          >   + 如果  $r_t > 1$：说明新策略更倾向于生成这个 token → 我们希望它被奖励。
+          >   + 如果  $r_t < 1$：说明新策略更少生成这个 token → 我们希望它被惩罚。
           > + **关键点**：这个比率用于调整策略更新的方向和大小。
 
       + 优势函数（Advantage Function）
 
-        + > $A_t$
+        + >  $A_t$
           >
           > + 含义：衡量动作 $o_t$ 的好坏程度，相对于平均水平有多优秀。即，在时间步 $t$ 的优势值。
           >
-          > + $ A_t = \delta_t + \gamma A_{t+1}$
-          >   + $\delta_t$ : 时序差分误差（TD error）: $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$
-          >     + $V(s_t)$ : 状态 $s_t $的价值函数估计。
+          > +  $ A_t = \delta_t + \gamma A_{t+1}$
+          >   +  $\delta_t$ : 时序差分误差（TD error）: $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$
+          >     +  $V(s_t)$ : 状态 $s_t $的价值函数估计。
           >
-          >   + $\gamma$ : 折扣因子
+          >   +  $\gamma$ : 折扣因子
           >
           > + 正负含义：
           >
-          >   + $A_t > 0$ ：这个token很好，应该被鼓励
-          >   + $A_t < 0$ ：这个token很差，应该被抑制
+          >   +  $A_t > 0$ ：这个token很好，应该被鼓励
+          >   +  $A_t < 0$ ：这个token很差，应该被抑制
 
       + 裁剪机制（Clipping Mechanism）
 
-        + > $ \text{clip}(r_t, 1-\varepsilon, 1 + \varepsilon)$
+        + >  $ \text{clip}(r_t, 1-\varepsilon, 1 + \varepsilon)$
           >
           > + 含义：将重要性比率 $r_t$限制在 $[1-\varepsilon, 1 + \varepsilon]$
           > + 作用：
@@ -984,7 +984,7 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
       + 最终的 $min$操作
 
-        + > $$  \min \left[ \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})} A_t, \text{clip} \left( \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})}, 1 - \varepsilon, 1 + \varepsilon \right) A_t \right]$$
+        + >  $$  \min \left[ \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})} A_t, \text{clip} \left( \frac{\pi_{\theta}(o_t|q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t|q, o_{<t})}, 1 - \varepsilon, 1 + \varepsilon \right) A_t \right]$$
           >
           > + 含义： 在两种情况中选择更保守的那个
           >
@@ -1091,35 +1091,35 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
   + 🎯目标函数：（代理目标）
 
-    + > $\mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \min\left( r_k \hat{A}_k, \text{clip}(r_k, 1-\varepsilon, 1+\varepsilon) \hat{A}_k \right) \right]$
+    + >  $\mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \min\left( r_k \hat{A}_k, \text{clip}(r_k, 1-\varepsilon, 1+\varepsilon) \hat{A}_k \right) \right]$
 
     + 组内平均：
 
-      + $$r_k = \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}$$
+      +  $$r_k = \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}$$
       + 含义： 对于同一个提示 $x$，我们让当前策略生成 $K$ 个不同的回复序列：$y_1,y_2,...,y_K$。
       + 然后对这 $k$ 个回复分别计算目标函数，并取平均。
       + 这个“组”就是 GRPO 中 “Group” 的由来。
 
     + 重要性比率（Importance Ratio）
 
-      + $r_k = \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}$
+      +  $r_k = \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}$
       + 表示新策略与旧策略在生成回复$y_k$时的概率比值，用于策略更新的权重调整。
 
     + 相对优势函数（Relative Advantage）
 
-      + $ \hat{A}_k = \frac{1}{K-1} \sum_{j \neq k} \left[ \mathbb{I}(y_k \succ y_j) - \mathbb{I}(y_j \succ y_k) \right]$
-      + $y_k \succ y_j$ ：表示人类偏好 $y_k$ 优于 $y_j$
-      + $\mathbb{I}()$ ：指示函数（成立为 1，否则为 0）
+      +  $ \hat{A}_k = \frac{1}{K-1} \sum_{j \neq k} \left[ \mathbb{I}(y_k \succ y_j) - \mathbb{I}(y_j \succ y_k) \right]$
+      +  $y_k \succ y_j$ ：表示人类偏好 $y_k$ 优于 $y_j$
+      +  $\mathbb{I}()$ ：指示函数（成立为 1，否则为 0）
       + 该公式计算的是 $y_k$ 在组内的“净胜分”，归一化到 $[−1,1]$
 
     + 裁剪函数（Clipping Function）
 
-      + $ \text{clip}(r_k, 1-\varepsilon, 1+\varepsilon) = \begin{cases}  1-\varepsilon & \text{if } r_k < 1-\varepsilon \\ r_k & \text{if } 1-\varepsilon \leq r_k \leq 1+\varepsilon \\ 1+\varepsilon & \text{if } r_k > 1+\varepsilon  \end{cases}$
+      +  $ \text{clip}(r_k, 1-\varepsilon, 1+\varepsilon) = \begin{cases}  1-\varepsilon & \text{if } r_k < 1-\varepsilon \\ r_k & \text{if } 1-\varepsilon \leq r_k \leq 1+\varepsilon \\ 1+\varepsilon & \text{if } r_k > 1+\varepsilon  \end{cases}$
       + 限制重要性比率的变化范围，防止策略更新过大。
 
     + 期望的完整形式
 
-      + $ \mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \min\left( \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)} \hat{A}_k, \text{clip}\left( \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}, 1-\varepsilon, 1+\varepsilon \right) \hat{A}_k \right) \right]$
+      +  $ \mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \min\left( \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)} \hat{A}_k, \text{clip}\left( \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}, 1-\varepsilon, 1+\varepsilon \right) \hat{A}_k \right) \right]$
 
 ### 4.1.5 PPO与GRPO的比较总结
 
@@ -1180,7 +1180,7 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
       + 然后计算每个回复的**相对优势**：
 
-        + > $ \hat{A}_k = \frac{1}{K-1} \sum_{j \neq k} \left[ \mathbb{I}(y_k \succ y_j) - \mathbb{I}(y_j \succ y_k) \right]$
+        + >  $ \hat{A}_k = \frac{1}{K-1} \sum_{j \neq k} \left[ \mathbb{I}(y_k \succ y_j) - \mathbb{I}(y_j \succ y_k) \right]$
 
   + 总结：
 
@@ -1188,16 +1188,16 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
       + 在 PPO 中：$A$ 依赖于 $RM$ 输出的奖励。
       + 在 GRPO 中：$A$ 完全绕开 $RM$ ，直接从组内偏好计算。
 
-+ 既说$r$是奖励模型给出的，那为啥又会有关于 $$r_k = \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}$$ 的公式呢？
++ 既说$r$是奖励模型给出的，那为啥又会有关于  $$r_k = \frac{\pi_\theta(y_k | x)}{\pi_{\text{old}}(y_k | x)}$$ 的公式呢？
 
   + ⚠️！！！注意辨别，这是因为符号重用！！！但含义完全不同！！！
   + **🟦 第一个 $r_t$ ：重要性比率（Importance Ratio）**
-    + $r_t = \frac{\pi_\theta(o_t | q, o_{<t})}{\pi_{\text{old}}(o_t | q, o_{<t})} $
+    +  $r_t = \frac{\pi_\theta(o_t | q, o_{<t})}{\pi_{\text{old}}(o_t | q, o_{<t})} $
     + 含义：新策略与旧策略在第 $t$ 步生成 token $o_t$ 的概率之比。
     + 用于**重要性采样**（Importance Sampling），让新策略可以用旧策略收集的数据进行优化。
     + 不涉及任何奖励模型。
   + **🟨 第二个 $r_t$ ：奖励模型输出（Reward Signal）**
-    + $r_t = \text{RM}(o_t, q, o_{<t})$
+    +  $r_t = \text{RM}(o_t, q, o_{<t})$
     + **含义**：奖励模型对当前 token 或序列的评分。
     + **来源**：由一个独立训练的神经网络（ $RM$ ）给出，通常基于人类偏好数据训练。
     + **用途**：作为**奖励信号**，用于计算优势函数 $At$。
@@ -1217,11 +1217,11 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
       + 对每个提示 $x$ ，采样 $K$ 个不同的回复：
 
-        + > $y_1,y_2,...y_k \sim \pi_{{\theta}_{old}}(y|x)$
+        + >  $y_1,y_2,...y_k \sim \pi_{{\theta}_{old}}(y|x)$
           >
           > 其中，每一个 $y_k$都是一个完整的输出序列；
           >
-          > $y_k= [y_k^1,y_k^2,……y_k^t]$
+          >  $y_k= [y_k^1,y_k^2,……y_k^t]$
           >
           > 其中，$y_k^t$是第$k$个回复在第$t$步生成的 $token$
 
@@ -1239,16 +1239,16 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
         + ✅️对序列 $y_k$的每个 $token$ $y_k^t$计算：
 
-          + > $r_k^t = \frac {\pi_{\theta}(y_k^t|x,y_k^{<t})} {\pi_{old}(y_k^t|x,y_k^{<t})}$
+          + >  $r_k^t = \frac {\pi_{\theta}(y_k^t|x,y_k^{<t})} {\pi_{old}(y_k^t|x,y_k^{<t})}$
 
           + 然后构建代理目标：==【内层求和】==
 
-            + > $L_k = \sum_{t=1}^{T_k} \min\left(r_k^t \hat{A}_k,\ \text{clip}\left(r_k^t, 1 - \varepsilon, 1 + \varepsilon\right)\hat{A}_k\right)$
+            + >  $L_k = \sum_{t=1}^{T_k} \min\left(r_k^t \hat{A}_k,\ \text{clip}\left(r_k^t, 1 - \varepsilon, 1 + \varepsilon\right)\hat{A}_k\right)$
 
       + 🧩 4. 最后对 $K$ 个回复取平均：==【外层平均】==
 
-        + $\mathcal{L}_{\text{GRPO}}(\theta) = \frac{1}{K} \sum_{k=1}^{K} L_k$
-        + $\mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \sum_{t=1}^{T_k} \min\left( r_k^t \hat{A}_k,\ \text{clip}\left(r_k^t, 1 - \varepsilon, 1 + \varepsilon\right)\hat{A}_k \right) \right]$
+        +  $\mathcal{L}_{\text{GRPO}}(\theta) = \frac{1}{K} \sum_{k=1}^{K} L_k$
+        +  $\mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \sum_{t=1}^{T_k} \min\left( r_k^t \hat{A}_k,\ \text{clip}\left(r_k^t, 1 - \varepsilon, 1 + \varepsilon\right)\hat{A}_k \right) \right]$
 
 # 第五章 课程总结
 
