@@ -1248,8 +1248,8 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
       + 🧩 4. 最后对 $K$ 个回复取平均：==【外层平均】==
 
-        +  $\mathcal{L}_{\text{GRPO}}(\theta) = \frac{1}{K} \sum_{k=1}^{K} L_k$
-        +  $\mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \sum_{t=1}^{T_k} \min\left( r_k^t \hat{A}_k,\ \text{clip}\left(r_k^t, 1 - \varepsilon, 1 + \varepsilon\right)\hat{A}_k \right) \right]$
+        +   $ \mathcal{L}_{\text{GRPO}}(\theta) = \frac{1}{K} \sum_{k=1}^{K} L_k$
+        +   $ \mathcal{L}_{\text{GRPO}}(\theta) = \mathbb{E}_{x \sim \mathcal{D}} \left[ \frac{1}{K} \sum_{k=1}^{K} \sum_{t=1}^{T_k} \min\left( r_k^t \hat{A}_k,\ \text{clip}\left(r_k^t, 1 - \varepsilon, 1 + \varepsilon\right)\hat{A}_k \right) \right]$
 
 # 第五章 课程总结
 
