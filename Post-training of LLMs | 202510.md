@@ -693,7 +693,7 @@ $p(x_{1:L})=p(x_1)p(x_2|x_1)p(x_3|x_1,x_2)....p(x_L|x_{1:L-1})=\prod_{i=1}^{L}p(
 
 + 传统方法：RLHF 中的 PPO 目标
 
-  + 目标函数：$$\mathcal{L}_{\text{PPO}}(\theta) = \mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}} \left[  \log \sigma \left( \beta \left( r_\theta(x, y_w) - r_\theta(x, y_l) \right) \right) - \lambda D_{\text{KL}}\left( \pi_\theta(\cdot|x) \parallel \pi_{\text{ref}}(\cdot|x) \right) \right]$$
+  + 目标函数：$$ \mathcal{L}_{\text{PPO}}(\theta) = \mathbb{E}_{(x,y_w,y_l)\sim\mathcal{D}} \left[ \log \sigma \left( \beta \left( r_\theta(x, y_w) - r_\theta(x, y_l) \right) \right) - \lambda D_{\text{KL}}\left( \pi_\theta(\cdot|x) \parallel \pi_{\text{ref}}(\cdot|x) \right)  \right] $$
   + 需要：
     + 显式训练一个奖励模型 $r_\theta$
     + 维护一个参考策略 $\pi_{ref}$
